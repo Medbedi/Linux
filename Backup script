@@ -1,0 +1,66 @@
+#!/bin/bash
+# Backup Script
+# Description: This script backs up multiple files and/or directories specified by the user.
+# Author: [Dongmin]
+
+# Function to check if all specified paths (files/directories) exist
+validate_paths() {
+  for path in "${paths[@]}"; do
+    if [[ ! -e $path ]]; then
+      echo "Error: '$path' does not exist."
+      return 1  # Return an error if any path is invalid
+    fi
+  done
+  return 0  # Return success if all paths are valid
+}
+
+# Prompt user for files or directories to back up
+echo "Enter the paths of files or directories to back up (separate by spaces):"
+read -r -a paths  # Read user input into an array called 'paths'
+
+# Verify that each file/directory exists using the validate_paths function
+validate_paths
+if [[ $? -ne 0 ]]; then
+  echo "One or more specified paths do not exist. Exiting."
+  exit 1
+fi
+
+# Prompt user for backup destination and filename
+echo "Enter the destination directory for the backup:"
+read -r dest_dir
+
+# Verify that the destination directory exists
+if [[ ! -d $dest_dir ]]; then
+  echo "Error: Destination directory '$dest_dir' does not exist. Exiting."
+  exit 1
+fi
+
+# Prompt user for the backup filename
+echo "Enter the name for the backup file (without extension):"
+read -r backup_name
+
+# Construct the full path for the backup file
+backup_path="$dest_dir/$backup_name.tar"
+
+# Ask user if compression should be applied
+echo "Would you like to apply compression? (y/n)"
+read -r compression_choice
+
+# Determine if gzip compression should be applied
+if [[ $compression_choice == "y" || $compression_choice == "Y" ]]; then
+  backup_path="$backup_path.gz"  # Add .gz extension if compression is selected
+  compression_flag="z"  # 'z' flag enables gzip compression in tar
+else
+  compression_flag=""  # No compression if user chose 'n'
+fi
+
+# Execute the backup operation using tar with optional compression
+echo "Creating backup..."
+tar -c${compression_flag}vf "$backup_path" "${paths[@]}"
+
+# Check if the backup was successful and provide user feedback
+if [[ $? -eq 0 ]]; then
+  echo "Backup completed successfully. Backup file created at: $backup_path"
+else
+  echo "Error: Backup failed."
+fi
